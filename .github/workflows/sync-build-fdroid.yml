@@ -170,9 +170,9 @@ jobs:
         run: |
           set -euo pipefail
           if [ -n "$FDROID_KEYSTORE" ]; then
-            printf '%s' "$FDROID_KEYSTORE" | base64 -d > keystore.jks
+            printf '%s' "$FDROID_KEYSTORE" | base64 -d > fdroid/keystore.jks
           else
-            keytool -genkeypair -v -keystore keystore.jks -alias twelve \
+            keytool -genkeypair -v -keystore fdroid/keystore.jks -alias twelve \
               -keyalg RSA -keysize 4096 -validity 36500 \
               -storepass twelve-standalone -keypass twelve-standalone \
               -dname "CN=Twelve Standalone, OU=Local, O=Local, L=Local, S=Local, C=US"
@@ -190,17 +190,13 @@ jobs:
           version_code="${{ needs.build-apk.outputs.version_code }}"
           version_name="${{ needs.build-apk.outputs.version_name }}"
           echo "Publishing $APP_ID version $version_name ($version_code)"
-          rm -rf fdroid/metadata
-          mkdir -p fdroid/metadata
           rm -f fdroid/repo/*.apk
           cp "apk-artifact/${APP_ID}_${version_code}.apk" "fdroid/repo/"
           cd fdroid
-          fdroid update --create-metadata --verbose
+          fdroid update --verbose
           ls -la repo/
           test -n "$(find repo -maxdepth 1 -name 'index*' | head -1)"
           cd "$GITHUB_WORKSPACE"
-          echo "$version_code" > fdroid/metadata/.version_code
-          echo "$version_name" > fdroid/metadata/.version_name
 
       - name: Commit F-Droid metadata and pinned commit
         run: |

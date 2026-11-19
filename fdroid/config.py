@@ -16,4 +16,5 @@ repo_maxage = 1440
 keystore = os.environ.get("KEYSTORE_PATH", os.path.abspath("keystore.jks"))
 keystorepass = os.environ.get("FDROID_KEYSTORE_PASSWORD", "twelve-standalone")
 keyalias = os.environ.get("FDROID_KEY_ALIAS", "twelve")
+repo_keyalias = keyalias
 keypass = os.environ.get("FDROID_KEY_PASSWORD", keystorepass)
