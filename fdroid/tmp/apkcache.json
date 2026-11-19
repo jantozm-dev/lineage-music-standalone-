@@ -1,0 +1,66 @@
+{
+  "METADATA_VERSION": 20002,
+  "allow_disabled_algorithms": false,
+  "org.lineageos.twelve_2026111519.apk": {
+    "hash": "9fee305f9c2bad9466268775ab1d302728f157d12580521f715d66ea35fdcdd3",
+    "hashType": "sha256",
+    "uses-permission": [
+      [
+        "android.permission.FOREGROUND_SERVICE",
+        null
+      ],
+      [
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK",
+        null
+      ],
+      [
+        "android.permission.INTERNET",
+        null
+      ],
+      [
+        "android.permission.MANAGE_MEDIA",
+        null
+      ],
+      [
+        "android.permission.READ_EXTERNAL_STORAGE",
+        32
+      ],
+      [
+        "android.permission.READ_MEDIA_AUDIO",
+        null
+      ],
+      [
+        "android.permission.RECORD_AUDIO",
+        null
+      ],
+      [
+        "android.permission.WAKE_LOCK",
+        null
+      ],
+      [
+        "android.permission.ACCESS_NETWORK_STATE",
+        null
+      ],
+      [
+        "org.lineageos.twelve.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION",
+        null
+      ]
+    ],
+    "uses-permission-sdk-23": [],
+    "features": [],
+    "icons_src": {},
+    "icons": {},
+    "antiFeatures": {},
+    "packageName": "org.lineageos.twelve",
+    "versionCode": 2026111519,
+    "name": "Music",
+    "versionName": "lineage-24.0-bc89c9e51509",
+    "minSdkVersion": 30,
+    "targetSdkVersion": 36,
+    "sig": "4a197d897800466f2c65e79c3c7cb6db",
+    "signer": "014f184e1d1f3b0860292a4d656fa620b100cd54411a60bc3e79eff9d94318d2",
+    "size": 7282786,
+    "apkName": "org.lineageos.twelve_2026111519.apk",
+    "added": 1795073324.483604
+  }
+}
