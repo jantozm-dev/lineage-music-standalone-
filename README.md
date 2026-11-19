@@ -21,22 +21,24 @@ and on demand, in three stages:
    `versionCode`/`versionName` to a commit-date / commit-hash scheme
    (upstream pins both, which would break app updates), builds a universal
    `assembleRelease` APK, then zipaligns + signs it.
-3. **F-Droid repo** — runs `fdroidserver`, regenerates the metadata and the
-   signed `index-v1`/`index-v2`, commits the metadata for traceability, and
-   force-pushes the repo contents to the `gh-pages` branch. `UPSTREAM_COMMIT`
-   records the last successfully published upstream snapshot.
+3. **F-Droid repo** — runs `fdroidserver`, regenerates the signed
+   `index-v1`/`index-v2` from the APK (metadata and `config.yml` are generated
+   in CI from the repository secrets; passwords never touch git), commits the
+   metadata for traceability, and force-pushes the repo contents to the
+   `gh-pages` branch under `/repo/`. `UPSTREAM_COMMIT` records the last
+   successfully published upstream snapshot.
 
 ## Install
 
 ### Via F-Droid
 
 1. Open the F-Droid client → **Settings** → **Repositories** → **+**.
-2. Add: `https://jantozm-dev.github.io/lineage-music-standalone-`
+2. Add: `https://jantozm-dev.github.io/lineage-music-standalone-/repo`
 3. Leave the fingerprint empty (the repo is served over GitHub Pages HTTPS).
 4. Refresh, search **"Twelve"**, install. Updates continue to arrive there
    automatically as upstream changes.
 
-Landing page: [index.html](https://jantozm-dev.github.io/lineage-music-standalone-)
+Landing page: [index.html](https://jantozm-dev.github.io/lineage-music-standalone-/repo/)
 (copy lives in `fdroid/repo/index.html`).
 
 ### Direct APK

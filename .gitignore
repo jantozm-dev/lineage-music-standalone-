@@ -5,4 +5,6 @@ apk-artifact/
 fdroid/repo/*
 !fdroid/repo/index.html
 fdroid/archive/
+fdroid/config.yml
+fdroid/keystore.jks
 __pycache__/

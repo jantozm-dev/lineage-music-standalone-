@@ -180,8 +180,6 @@ jobs:
 
       - name: Build F-Droid repo
         env:
-          REPO_OWNER: ${{ github.repository_owner }}
-          REPO_NAME: ${{ github.event.repository.name }}
           FDROID_KEYSTORE_PASSWORD: ${{ secrets.FDROID_KEYSTORE_PASSWORD }}
           FDROID_KEY_ALIAS: ${{ secrets.FDROID_KEY_ALIAS }}
           FDROID_KEY_PASSWORD: ${{ secrets.FDROID_KEY_PASSWORD }}
@@ -192,6 +190,21 @@ jobs:
           echo "Publishing $APP_ID version $version_name ($version_code)"
           rm -f fdroid/repo/*.apk
           cp "apk-artifact/${APP_ID}_${version_code}.apk" "fdroid/repo/"
+          repo_owner="${GITHUB_REPOSITORY_OWNER}"
+          repo_name="${GITHUB_REPOSITORY#*/}"
+          store_pass="${FDROID_KEYSTORE_PASSWORD:-twelve-standalone}"
+          key_alias="${FDROID_KEY_ALIAS:-twelve}"
+          key_pass="${FDROID_KEY_PASSWORD:-$store_pass}"
+          cat > fdroid/config.yml <<EOF
+          repo_name: "Twelve Standalone"
+          repo_url: "https://${repo_owner}.github.io/${repo_name}/repo"
+          repo_description: "Unofficial, automatically rebuilt APKs of the LineageOS Twelve music player, packaged for any Android 11+ device."
+          # note: generated in CI from secrets; never commit real passwords
+          keystore: "$PWD/fdroid/keystore.jks"
+          keystorepass: "$store_pass"
+          repo_keyalias: "$key_alias"
+          keypass: "$key_pass"
+          EOF
           cd fdroid
           fdroid update --verbose
           ls -la repo/
@@ -216,7 +229,8 @@ jobs:
         run: |
           set -euo pipefail
           deploy_dir="$(mktemp -d)"
-          cp -r fdroid/repo/. "$deploy_dir/"
+          mkdir -p "$deploy_dir/repo"
+          cp -r fdroid/repo/. "$deploy_dir/repo/"
           cd "$deploy_dir"
           git init --quiet -b gh-pages
           git config user.name "github-actions[bot]"

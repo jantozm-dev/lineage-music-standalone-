@@ -24,7 +24,8 @@ and packaged for any Android 11+ device.</p>
 </ol>
 <pre id="repo-url">Loading…</pre>
 <script>
-document.getElementById('repo-url').textContent = window.location.origin + window.location.pathname.replace(/index\.html?$/, '');
+document.getElementById('repo-url').textContent =
+  (window.location.origin + window.location.pathname).replace(/index\.html?$/, '');
 </script>
 <ol start="3">
   <li>Leave the fingerprint empty (GitHub Pages serves over HTTPS).</li>
