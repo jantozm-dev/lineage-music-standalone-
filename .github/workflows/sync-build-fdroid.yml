@@ -50,17 +50,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: "17"
-          cache: gradle
 
       - name: Clone pinned upstream snapshot
         run: |
           set -euo pipefail
           git clone --quiet "https://github.com/$UPSTREAM_REPO" upstream
           git -C upstream checkout --quiet --detach "${{ needs.sync-upstream.outputs.commit }}"
+
+      - uses: gradle/actions/setup-gradle@v4
 
       - name: Set standalone version (commit-date based versionCode)
         id: versions
@@ -148,7 +149,7 @@ jobs:
           name: apk
           path: apk-artifact
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: "17"
