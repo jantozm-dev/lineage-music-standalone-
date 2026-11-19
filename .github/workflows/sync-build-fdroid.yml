@@ -73,6 +73,7 @@ jobs:
           sed -i -E 's/^([[:space:]]*versionName = ).*/\1"'"${version_name}"'"/' upstream/app/build.gradle.kts
           grep -nE 'version(Code|Name) =' upstream/app/build.gradle.kts
           echo "version_code=$version_code" >> "$GITHUB_OUTPUT"
+          echo "version_name=$version_name" >> "$GITHUB_OUTPUT"
           echo "version_name=$version_name" >> "$GITHUB_ENV"
           echo "$version_code" > version_code.txt
           echo "$version_name" > version_name.txt
