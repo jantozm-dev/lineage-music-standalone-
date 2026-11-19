@@ -1,0 +1,8 @@
+*.jks
+*.keystore
+upstream/
+apk-artifact/
+fdroid/repo/*
+!fdroid/repo/index.html
+fdroid/archive/
+__pycache__/

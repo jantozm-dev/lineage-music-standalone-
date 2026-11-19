@@ -1,0 +1,239 @@
+name: Sync upstream, build APK, publish F-Droid repo
+
+on:
+  schedule:
+    - cron: "30 5 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+
+concurrency:
+  group: sync-build-fdroid
+  cancel-in-progress: false
+
+env:
+  UPSTREAM_REPO: LineageOS/android_packages_apps_Twelve
+  UPSTREAM_BRANCH: lineage-24.0
+  APP_ID: org.lineageos.twelve
+
+jobs:
+  sync-upstream:
+    name: Resolve latest upstream commit
+    runs-on: ubuntu-latest
+    outputs:
+      commit: ${{ steps.check.outputs.commit }}
+    steps:
+      - name: Check upstream
+        id: check
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          commit="$(gh api "repos/$UPSTREAM_REPO/commits/$UPSTREAM_BRANCH" --jq '.sha' | tr -d '[:space:]')"
+          echo "Latest upstream commit on $UPSTREAM_BRANCH: $commit"
+          echo "commit=$commit" >> "$GITHUB_OUTPUT"
+
+  build-apk:
+    name: Build and sign APK
+    needs: sync-upstream
+    runs-on: ubuntu-latest
+    outputs:
+      version_code: ${{ steps.versions.outputs.version_code }}
+      version_name: ${{ steps.versions.outputs.version_name }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      - name: Clone pinned upstream snapshot
+        run: |
+          set -euo pipefail
+          git clone --quiet "https://github.com/$UPSTREAM_REPO" upstream
+          git -C upstream checkout --quiet --detach "${{ needs.sync-upstream.outputs.commit }}"
+
+      - name: Set standalone version (commit-date based versionCode)
+        id: versions
+        run: |
+          set -euo pipefail
+          version_code="$(date -u -d "@$(git -C upstream log -1 --format=%ct)" +%Y%m%d%H)"
+          version_name="$UPSTREAM_BRANCH-$(git -C upstream rev-parse --short=12 HEAD)"
+          sed -i -E "s/^([[:space:]]*versionCode = ).*/\1${version_code}/" upstream/app/build.gradle.kts
+          sed -i -E 's/^([[:space:]]*versionName = ).*/\1"'"${version_name}"'"/' upstream/app/build.gradle.kts
+          grep -nE 'version(Code|Name) =' upstream/app/build.gradle.kts
+          echo "version_code=$version_code" >> "$GITHUB_OUTPUT"
+          echo "version_name=$version_name" >> "$GITHUB_ENV"
+          echo "$version_code" > version_code.txt
+          echo "$version_name" > version_name.txt
+
+      - name: Prepare signing keystore
+        env:
+          FDROID_KEYSTORE: ${{ secrets.FDROID_KEYSTORE }}
+          FDROID_KEYSTORE_PASSWORD: ${{ secrets.FDROID_KEYSTORE_PASSWORD }}
+          FDROID_KEY_ALIAS: ${{ secrets.FDROID_KEY_ALIAS }}
+        run: |
+          set -euo pipefail
+          if [ -n "$FDROID_KEYSTORE" ]; then
+            printf '%s' "$FDROID_KEYSTORE" | base64 -d > keystore.jks
+            keytool -list -v -keystore keystore.jks \
+              -storepass "$FDROID_KEYSTORE_PASSWORD" -alias "$FDROID_KEY_ALIAS" > /dev/null
+          else
+            echo "FDROID_KEYSTORE secret not set; generating an ephemeral keystore."
+            echo "WARNING: APK signatures will change every run, so installed apps cannot update in place."
+            echo "Configure the FDROID_KEYSTORE secrets (see README.md) for stable signing."
+            keytool -genkeypair -v -keystore keystore.jks -alias twelve \
+              -keyalg RSA -keysize 4096 -validity 36500 \
+              -storepass twelve-standalone -keypass twelve-standalone \
+              -dname "CN=Twelve Standalone, OU=Local, O=Local, L=Local, S=Local, C=US"
+          fi
+
+      - name: Build release APK
+        working-directory: upstream
+        run: ./gradlew --no-daemon :app:assembleRelease
+
+      - name: Align and sign APK
+        env:
+          FDROID_KEYSTORE_PASSWORD: ${{ secrets.FDROID_KEYSTORE_PASSWORD }}
+          FDROID_KEY_ALIAS: ${{ secrets.FDROID_KEY_ALIAS }}
+          FDROID_KEY_PASSWORD: ${{ secrets.FDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          store_pass="${FDROID_KEYSTORE_PASSWORD:-twelve-standalone}"
+          key_alias="${FDROID_KEY_ALIAS:-twelve}"
+          key_pass="${FDROID_KEY_PASSWORD:-$store_pass}"
+          build_tools="$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 | sort -V | tail -1)"
+          unsigned="upstream/app/build/outputs/apk/release/app-release-unsigned.apk"
+          aligned="aligned.apk"
+          signed="${APP_ID}_${{ steps.versions.outputs.version_code }}.apk"
+          "$build_tools/zipalign" -f -p 4 "$unsigned" "$aligned"
+          "$build_tools/apksigner" sign \
+            --ks keystore.jks \
+            --ks-key-alias "$key_alias" \
+            --ks-pass "pass:$store_pass" \
+            --key-pass "pass:$key_pass" \
+            --out "$signed" "$aligned"
+          "$build_tools/apksigner" verify --print-certs "$signed"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: apk
+          path: |
+            ${{ env.APP_ID }}_${{ steps.versions.outputs.version_code }}.apk
+            version_code.txt
+            version_name.txt
+          if-no-files-found: error
+          retention-days: 21
+
+  fdroid-repo:
+    name: Publish F-Droid repo
+    needs: [sync-upstream, build-apk]
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: apk
+          path: apk-artifact
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Install fdroidserver
+        run: |
+          set -euo pipefail
+          build_tools="$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 | sort -V | tail -1)"
+          echo "$build_tools" >> "$GITHUB_PATH"
+          python3 -m pip install --quiet --user fdroidserver
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Prepare signing keystore
+        env:
+          FDROID_KEYSTORE: ${{ secrets.FDROID_KEYSTORE }}
+          FDROID_KEYSTORE_PASSWORD: ${{ secrets.FDROID_KEYSTORE_PASSWORD }}
+          FDROID_KEY_ALIAS: ${{ secrets.FDROID_KEY_ALIAS }}
+        run: |
+          set -euo pipefail
+          if [ -n "$FDROID_KEYSTORE" ]; then
+            printf '%s' "$FDROID_KEYSTORE" | base64 -d > keystore.jks
+          else
+            keytool -genkeypair -v -keystore keystore.jks -alias twelve \
+              -keyalg RSA -keysize 4096 -validity 36500 \
+              -storepass twelve-standalone -keypass twelve-standalone \
+              -dname "CN=Twelve Standalone, OU=Local, O=Local, L=Local, S=Local, C=US"
+          fi
+
+      - name: Build F-Droid repo
+        env:
+          REPO_OWNER: ${{ github.repository_owner }}
+          REPO_NAME: ${{ github.event.repository.name }}
+          FDROID_KEYSTORE_PASSWORD: ${{ secrets.FDROID_KEYSTORE_PASSWORD }}
+          FDROID_KEY_ALIAS: ${{ secrets.FDROID_KEY_ALIAS }}
+          FDROID_KEY_PASSWORD: ${{ secrets.FDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          version_code="${{ needs.build-apk.outputs.version_code }}"
+          version_name="${{ needs.build-apk.outputs.version_name }}"
+          echo "Publishing $APP_ID version $version_name ($version_code)"
+          rm -rf fdroid/metadata
+          mkdir -p fdroid/metadata
+          rm -f fdroid/repo/*.apk
+          cp "apk-artifact/${APP_ID}_${version_code}.apk" "fdroid/repo/"
+          cd fdroid
+          fdroid update --create-metadata --verbose
+          ls -la repo/
+          test -n "$(find repo -maxdepth 1 -name 'index*' | head -1)"
+          cd "$GITHUB_WORKSPACE"
+          echo "$version_code" > fdroid/metadata/.version_code
+          echo "$version_name" > fdroid/metadata/.version_name
+
+      - name: Commit F-Droid metadata and pinned commit
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          echo "${{ needs.sync-upstream.outputs.commit }}" > UPSTREAM_COMMIT
+          git add fdroid UPSTREAM_COMMIT
+          if git diff --cached --quiet; then
+            echo "Nothing to commit"
+          else
+            git commit -m "chore: F-Droid release ${{ needs.build-apk.outputs.version_name }} (code ${{ needs.build-apk.outputs.version_code }})"
+            git push
+          fi
+
+      - name: Deploy F-Droid repo to GitHub Pages
+        run: |
+          set -euo pipefail
+          deploy_dir="$(mktemp -d)"
+          cp -r fdroid/repo/. "$deploy_dir/"
+          cd "$deploy_dir"
+          git init --quiet -b gh-pages
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit --quiet -m "Publish F-Droid repo: ${APP_ID} ${{ needs.build-apk.outputs.version_name }}"
+          git push --quiet --force "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" gh-pages:gh-pages
+
+      - name: Enable GitHub Pages on gh-pages (first run only)
+        continue-on-error: true
+        run: |
+          curl -sf -X POST \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/pages" \
+            -d '{"build_type":"legacy","source":{"branch":"gh-pages","path":"/"}}' || \
+          curl -sf -X PATCH \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/pages" \
+            -d '{"build_type":"legacy","source":{"branch":"gh-pages","path":"/"}}' || \
+          echo "Page already configured or API unavailable"

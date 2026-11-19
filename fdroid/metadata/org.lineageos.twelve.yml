@@ -1,0 +1,26 @@
+Categories:
+  - Multimedia
+License: Apache-2.0
+AuthorName: The LineageOS Project
+WebSite: https://lineageos.org
+SourceCode: https://github.com/LineageOS/android_packages_apps_Twelve
+IssueTracker: https://github.com/LineageOS/android_packages_apps_Twelve/issues
+Translation: https://www.transifex.com/lineageos/twelve
+
+Name: Twelve (standalone)
+AutoName: Twelve
+Summary: A simple and lightweight music player from LineageOS
+Description: |-
+    Twelve is the LineageOS music player: a simple and lightweight local-music
+    player with support for queue management, favorites, a widget, Hi-res audio
+    and audio effects.
+
+    This version is repackaged for use on any Android 11+ device. It is built
+    automatically from the upstream LineageOS source whenever a new commit lands
+    on the lineage-24.0 branch. Note that this build is signed by the maintainer
+    of this repository, so it will not update in place over builds from other
+    sources.
+
+UpdateCheckMode: None
+CurrentVersion: 1.0
+CurrentVersionCode: 1
