@@ -3,6 +3,11 @@ name: Sync upstream, build APK, publish F-Droid repo
 on:
   schedule:
     - cron: "30 5 * * *"
+  push:
+    branches: [main]
+    paths-ignore:
+      - UPSTREAM_COMMIT
+      - "fdroid/**"
   workflow_dispatch:
 
 permissions:
