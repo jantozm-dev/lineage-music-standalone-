@@ -2,7 +2,7 @@
   "METADATA_VERSION": 20002,
   "allow_disabled_algorithms": false,
   "org.lineageos.twelve_2026111519.apk": {
-    "hash": "788dff06dc10ffffeababaaf8627d1cd80e8ca185b071735da7c36676e45d5ed",
+    "hash": "6a72d94bbb8c7b14f2b6dda52822d9f0892880c214c17d2dc258681aa52362c0",
     "hashType": "sha256",
     "uses-permission": [
       [
@@ -57,10 +57,10 @@
     "versionName": "lineage-24.0-bc89c9e51509",
     "minSdkVersion": 30,
     "targetSdkVersion": 36,
-    "sig": "bfaadb2357d32f1b4c8ceae243521e0a",
-    "signer": "702119cafe56edc932aa6280291629ef8aaa1e3e1ae2b6592174c20ef99ac918",
+    "sig": "7bf9e564cbc81e9ca54f08e15d11e80c",
+    "signer": "73e1ce006210f96ea43457bb0337a0b84f9dde89cf625a842e71496fde105ad7",
     "size": 7282786,
     "apkName": "org.lineageos.twelve_2026111519.apk",
-    "added": 1795451207.096171
+    "added": 1795536928.285355
   }
 }
