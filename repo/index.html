@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Twelve Standalone — Unofficial F-Droid repo</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 42rem; margin: 3rem auto; padding: 0 1rem; line-height: 1.6; color: #1c1b1f; }
+  code, pre { background: #f2f0f4; padding: 0.2rem 0.4rem; border-radius: 6px; }
+  h1 { font-weight: 600; }
+</style>
+</head>
+<body>
+<h1>Twelve Standalone</h1>
+<p>Unofficial, automatically rebuilt APKs of the LineageOS <strong>Twelve</strong>
+music player (<code>org.lineageos.twelve</code>), synced continuously from the
+<a href="https://github.com/LineageOS/android_packages_apps_Twelve">upstream LineageOS repository</a>
+and packaged for any Android 11+ device.</p>
+
+<h2>Add this repo to the F-Droid client</h2>
+<ol>
+  <li>Open the <em>F-Droid</em> client → <em>Settings</em> → <em>Repositories</em> → <em>+</em>.</li>
+  <li>Paste this URL:</li>
+</ol>
+<pre id="repo-url">Loading…</pre>
+<script>
+document.getElementById('repo-url').textContent =
+  (window.location.origin + window.location.pathname).replace(/index\.html?$/, '');
+</script>
+<ol start="3">
+  <li>Leave the fingerprint empty (GitHub Pages serves over HTTPS).</li>
+  <li>Refresh and search for <strong>Twelve</strong>.</li>
+</ol>
+
+<h2>Direct APK install</h2>
+<p>The current APK is also downloadable straight from this page: see the
+<code>org.lineageos.twelve_*.apk</code> file in the directory listing.</p>
+
+<p><em>Twelve is developed by The LineageOS Project, licensed Apache-2.0.
+This repo only repackages community builds and is not affiliated with LineageOS.</em></p>
+</body>
+</html>
